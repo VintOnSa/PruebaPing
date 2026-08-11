@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Network Dashboard</title>
+
+    <!-- Tailwind -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#2563eb"
+                    }
+                }
+            }
+        };
+    </script>
+</head>
+
+<body class="bg-slate-100 min-h-screen text-slate-800">
+
+    <!-- ================================================= -->
+    <!-- BARRA SUPERIOR -->
+    <!-- ================================================= -->
+
+    <header class="bg-slate-900 text-white shadow-lg">
+        <div class="max-w-7xl mx-auto px-6 py-4">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+
+                <!-- Título -->
+                <div>
+                    <h1 class="text-xl font-bold">Network Dashboard</h1>
+                    <p class="text-sm text-slate-400">Monitor de dispositivos de red</p>
+                </div>
+
+                <!-- Botones -->
+                <div class="flex gap-3">
+
+                    <!-- Escanear -->
+                    <button
+                        id="btnScan"
+                        onclick="escanear()"
+                        class="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 disabled:cursor-not-allowed px-4 py-2 rounded-lg font-medium transition"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35m2.35-5.65a8 8 0 11-16 0 8 8 0 0116 0z" />
+                        </svg>
+                        Escanear
+                    </button>
+
+                    <!-- Ping -->
+                    <button
+                        id="btnPing"
+                        onclick="togglePing()"
+                        class="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 px-4 py-2 rounded-lg font-medium transition"
+                    >
+                        <span id="pingIcon">●</span>
+                        <span id="pingText">Hacer Ping</span>
+                    </button>
+
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- ================================================= -->
+    <!-- CONTENIDO -->
+    <!-- ================================================= -->
+
+    <main class="max-w-7xl mx-auto px-6 py-8">
+
+        <!-- Buscador -->
+        <div class="mb-6 flex justify-center">
+            <div class="relative w-full max-w-xl">
+
+                <!-- Icono -->
+                <div class="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m21 21-4.35-4.35m2.35-5.65a8 8 0 1 1-16 0 8 8 0 0 1 16 0Z" />
+                    </svg>
+                </div>
+
+                <!-- Input -->
+                <input
+                    id="searchInput"
+                    type="text"
+                    placeholder="Buscar dispositivo por IP..."
+                    autocomplete="off"
+                    oninput="filtrarDispositivos()"
+                    class="w-full bg-white border border-slate-200 rounded-xl pl-11 pr-10 py-3 text-sm font-mono shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                >
+
+                <!-- Limpiar -->
+                <button
+                    id="clearSearch"
+                    type="button"
+                    onclick="limpiarBusqueda()"
+                    class="hidden absolute inset-y-0 right-0 items-center pr-4 text-slate-400 hover:text-slate-700"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18 18 6M6 6l12 12" />
+                    </svg>
+                </button>
+
+            </div>
+        </div>
+
+        <!-- Estado -->
+        <div class="mb-6 flex items-center justify-between">
+            <div>
+                <h2 class="text-lg font-semibold">Dispositivos</h2>
+                <p id="statusText" class="text-sm text-slate-500">
+                    Presiona "Escanear" para cargar los dispositivos.
+                </p>
+            </div>
+
+            <div id="deviceCounter" class="bg-white border border-slate-200 px-4 py-2 rounded-lg text-sm font-medium shadow-sm">
+                0 dispositivos
+            </div>
+        </div>
+
+        <!-- Grid de dispositivos -->
+        <div id="devicesContainer" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5"></div>
+
+        <!-- Estado vacío -->
+        <div id="emptyState" class="flex flex-col items-center justify-center py-24 text-center">
+            <div class="w-20 h-20 rounded-full bg-slate-200 flex items-center justify-center mb-5">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-10 h-10 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+            </div>
+
+            <h3 class="font-semibold text-slate-700">No hay dispositivos</h3>
+            <p class="text-sm text-slate-500 mt-1">Ejecuta un escaneo para comenzar.</p>
+        </div>
+
+    </main>
+
+    <!-- ================================================= -->
+    <!-- MODAL -->
+    <!-- ================================================= -->
+
+    <div id="deviceModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden items-center justify-center z-50 px-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+
+            <!-- Header -->
+            <div class="bg-slate-900 text-white px-6 py-4 flex items-center justify-between">
+                <div>
+                    <h3 class="font-semibold">Información del dispositivo</h3>
+                    <p class="text-xs text-slate-400">Detalles de red</p>
+                </div>
+
+                <button onclick="cerrarModal()" class="text-slate-400 hover:text-white text-2xl leading-none">
+                    &times;
+                </button>
+            </div>
+
+            <!-- Contenido -->
+            <div class="p-6">
+                <div class="flex flex-col items-center">
+
+                    <!-- PC -->
+                    <div class="w-28 h-20 bg-slate-800 rounded-lg flex items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-14 h-14 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 5a2 2 0 012-2h12a2 2 0 012 2v10a2 2 0 01-2 2H6a2 2 0 01-2-2V5z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 21h8M12 17v4" />
+                        </svg>
+                    </div>
+
+                    <!-- IP -->
+                    <div class="mt-6 text-center">
+                        <p class="text-xs text-slate-400 uppercase">Dirección IP</p>
+                        <p id="modalIp" class="text-2xl font-bold text-slate-800 font-mono mt-1">-</p>
+                    </div>
+
+                    <!-- Estado -->
+                    <div id="modalStatus" class="mt-5 px-4 py-2 rounded-full bg-slate-100 text-slate-500 text-sm">
+                        Sin comprobar
+                    </div>
+
+                    <!-- Latencia -->
+                    <div id="modalLatency" class="mt-3 text-sm text-slate-500">
+                        Latencia: -
+                    </div>
+
+                    <!-- Botón de ping individual -->
+                    <div class="mt-5 w-full">
+                        <button
+                            id="btnModalPing"
+                            onclick="pingDispositivoModal()"
+                            class="w-full bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-lg font-medium transition"
+                        >
+                            Hacer Ping
+                        </button>
+                    </div>
+
+
+                    <!-- Traceroute -->
+                    <div class="mt-6 w-full">
+
+                        <div class="flex items-center justify-between mb-3">
+                            <h4 class="font-semibold text-slate-700">
+                                Ruta de red
+                            </h4>
+
+                            <span
+                                id="hopCount"
+                                class="text-xs text-slate-400"
+                            >
+                                -
+                            </span>
+                        </div>
+
+                        <div
+                            id="hopsContainer"
+                            class="space-y-2 max-h-64 overflow-y-auto"
+                        >
+                            <div class="text-sm text-slate-400 text-center py-4">
+                                Cargando ruta...
+                            </div>
+                        </div>
+
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==================================================
+        // VARIABLES
+        // ==================================================
+
+        let dispositivos = [];
+        let pingActivo = false;
+        let modalDevice = null;
+
+
+        // ==================================================
+        // ESCANEAR
+        // ==================================================
+
+        async function escanear() {
+            const btnScan = document.getElementById("btnScan");
+            const statusText = document.getElementById("statusText");
+
+            btnScan.disabled = true;
+            statusText.textContent = "Cargando dispositivos...";
+
+            try {
+                const response = await fetch("escanear/");
+
+                if (!response.ok) {
+                    throw new Error("Error al obtener dispositivos");
+                }
+
+                dispositivos = await response.json();
+                renderizarDispositivos();
+
+                statusText.textContent = `Dispositivos cargados: ${dispositivos.length}`;
+            } catch (error) {
+                console.error(error);
+                statusText.textContent = "No se pudieron cargar los dispositivos.";
+            } finally {
+                btnScan.disabled = false;
+            }
+        }
+
+
+        // ==================================================
+        // RENDERIZAR DISPOSITIVOS
+        // ==================================================
+
+        function renderizarDispositivos(lista = dispositivos) {
+            const container = document.getElementById("devicesContainer");
+            const emptyState = document.getElementById("emptyState");
+            const counter = document.getElementById("deviceCounter");
+
+            container.innerHTML = "";
+
+            // Contador
+            counter.textContent = lista.length === dispositivos.length
+                ? `${dispositivos.length} dispositivo${dispositivos.length !== 1 ? "s" : ""}`
+                : `${lista.length} de ${dispositivos.length} dispositivos`;
+
+            // Sin resultados
+            if (lista.length === 0) {
+                emptyState.classList.remove("hidden");
+
+                const searchInput = document.getElementById("searchInput");
+                const emptyTitle = emptyState.querySelector("h3");
+                const emptyDescription = emptyState.querySelector("p");
+
+                if (searchInput.value.trim() !== "") {
+                    emptyTitle.textContent = "No se encontraron dispositivos";
+                    emptyDescription.textContent = `No hay dispositivos que coincidan con "${searchInput.value}"`;
+                } else {
+                    emptyTitle.textContent = "No hay dispositivos";
+                    emptyDescription.textContent = "Ejecuta un escaneo para comenzar.";
+                }
+
+                return;
+            }
+
+            emptyState.classList.add("hidden");
+
+            // Crear tarjetas
+            lista.forEach(dispositivo => {
+                const index = dispositivos.findIndex(d => d.ip === dispositivo.ip);
+                const card = document.createElement("button");
+
+                card.type = "button";
+                card.className = "bg-white border border-slate-200 rounded-xl p-5 shadow-sm hover:shadow-lg hover:border-blue-400 hover:-translate-y-1 transition-all duration-200 text-left group cursor-pointer";
+                card.addEventListener("click", () => mostrarDispositivo(dispositivo));
+
+                const estado = dispositivo.online === true
+                    ? "Online"
+                    : dispositivo.online === false
+                        ? "Offline"
+                        : "Sin comprobar";
+
+                const latencia = dispositivo.latency !== null && dispositivo.latency !== undefined
+                    ? `Latencia: ${dispositivo.latency} ms`
+                    : "Latencia: -";
+
+                card.innerHTML = `
+                    <div class="flex justify-center mb-5">
+                        <div class="w-28 h-20 bg-slate-800 rounded-lg flex items-center justify-center group-hover:bg-blue-600 transition-colors">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-14 h-14 text-blue-400 group-hover:text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 5a2 2 0 012-2h12a2 2 0 012 2v10a2 2 0 01-2 2H6a2 2 0 01-2-2V5z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 21h8M12 17v4" />
+                            </svg>
+                        </div>
+                    </div>
+
+                    <div class="text-center">
+                        <p class="text-xs uppercase tracking-wider text-slate-400">Dirección IP</p>
+                        <p class="font-mono font-semibold text-lg text-slate-800 mt-1">${escapeHtml(dispositivo.ip)}</p>
+                    </div>
+
+                    <div class="mt-4 flex justify-center items-center gap-2">
+                        <span id="status-${index}" class="px-3 py-1 rounded-full text-xs bg-slate-100 text-slate-500">
+                            ${estado}
+                        </span>
+                    </div>
+
+                    <div id="latency-${index}" class="mt-2 text-center text-xs text-slate-400">
+                        ${latencia}
+                    </div>
+                `;
+
+                container.appendChild(card);
+
+                if (dispositivo.online !== undefined) {
+                    actualizarEstado(dispositivo);
+                }
+            });
+        }
+
+
+        // ==================================================
+        // FILTRAR DISPOSITIVOS
+        // ==================================================
+
+        function filtrarDispositivos() {
+            const searchInput = document.getElementById("searchInput");
+            const clearSearch = document.getElementById("clearSearch");
+            const texto = searchInput.value.toLowerCase().trim();
+
+            // Botón limpiar
+            clearSearch.classList.toggle("hidden", texto === "");
+            clearSearch.classList.toggle("flex", texto !== "");
+
+            // Mostrar todo
+            if (texto === "") {
+                renderizarDispositivos(dispositivos);
+                return;
+            }
+
+            // Filtrar por IP
+            const filtrados = dispositivos.filter(dispositivo =>
+                dispositivo.ip.toLowerCase().includes(texto)
+            );
+
+            renderizarDispositivos(filtrados);
+        }
+
+
+        // ==================================================
+        // LIMPIAR BÚSQUEDA
+        // ==================================================
+
+        function limpiarBusqueda() {
+            const searchInput = document.getElementById("searchInput");
+
+            searchInput.value = "";
+            filtrarDispositivos();
+            searchInput.focus();
+        }
+
+
+        // ==================================================
+        // MOSTRAR MODAL
+        // ==================================================
+
+        async function mostrarDispositivo(dispositivo) {
+
+            modalDevice = dispositivo;
+
+            const modal = document.getElementById("deviceModal");
+            const modalIp = document.getElementById("modalIp");
+            const modalStatus = document.getElementById("modalStatus");
+            const modalLatency = document.getElementById("modalLatency");
+            const hopsContainer = document.getElementById("hopsContainer");
+            const hopCount = document.getElementById("hopCount");
+            const btnPing = document.getElementById("btnModalPing");
+
+            // Información básica
+            modalIp.textContent = dispositivo.ip;
+
+            if (dispositivo.online === true) {
+                modalStatus.textContent = "Online";
+                modalStatus.className =
+                    "mt-5 px-4 py-2 rounded-full bg-emerald-100 text-emerald-700 text-sm font-medium";
+            } else if (dispositivo.online === false) {
+                modalStatus.textContent = "Offline";
+                modalStatus.className =
+                    "mt-5 px-4 py-2 rounded-full bg-red-100 text-red-700 text-sm font-medium";
+            } else {
+                modalStatus.textContent = "Sin comprobar";
+                modalStatus.className =
+                    "mt-5 px-4 py-2 rounded-full bg-slate-100 text-slate-500 text-sm";
+            }
+
+            modalLatency.textContent =
+                dispositivo.latency !== undefined &&
+                dispositivo.latency !== null
+                    ? `Latencia: ${dispositivo.latency} ms`
+                    : "Latencia: -";
+
+            // Estado inicial del traceroute
+            hopCount.textContent = "-";
+
+            hopsContainer.innerHTML = `
+                <div class="text-sm text-slate-400 text-center py-4">
+                    Analizando ruta...
+                </div>
+            `;
+
+            // Abrir modal
+            modal.classList.remove("hidden");
+            modal.classList.add("flex");
+
+            // Deshabilitar botón mientras se hace el diagnóstico
+            btnPing.disabled = false;
+            btnPing.textContent = "Hacer Ping";
+
+            // Ejecutar diagnóstico
+            await cargarDiagnostico(dispositivo.ip);
+        }
+
+        async function cargarDiagnostico(ip) {
+
+            const hopsContainer = document.getElementById("hopsContainer");
+            const hopCount = document.getElementById("hopCount");
+
+            try {
+
+                const response = await fetch(
+                    `diagnostico/?ip=${encodeURIComponent(ip)}`
+                );
+
+                if (!response.ok) {
+                    throw new Error("Error obteniendo diagnóstico");
+                }
+
+                const data = await response.json();
+
+                // Actualizar ping
+                const dispositivo = dispositivos.find(
+                    d => d.ip === ip
+                );
+
+                if (dispositivo) {
+                    dispositivo.online = data.online;
+                    dispositivo.latency = data.latency;
+                }
+
+                actualizarModalPing(data);
+
+                // Actualizar saltos
+                renderizarSaltos(data.hops);
+
+            } catch (error) {
+
+                console.error(
+                    "Error obteniendo diagnóstico:",
+                    error
+                );
+
+                hopsContainer.innerHTML = `
+                    <div class="text-sm text-red-500 text-center py-4">
+                        No se pudo obtener la ruta.
+                    </div>
+                `;
+
+                hopCount.textContent = "Error";
+            }
+        }
+
+        function renderizarSaltos(saltos) {
+
+            const container = document.getElementById("hopsContainer");
+            const hopCount = document.getElementById("hopCount");
+
+            container.innerHTML = "";
+
+            if (!saltos || saltos.length === 0) {
+
+                hopCount.textContent = "0 saltos";
+
+                container.innerHTML = `
+                    <div class="text-sm text-slate-400 text-center py-4">
+                        No se pudieron obtener saltos.
+                    </div>
+                `;
+
+                return;
+            }
+
+            hopCount.textContent =
+                `${saltos.length} salto${saltos.length !== 1 ? "s" : ""}`;
+
+            saltos.forEach((salto, index) => {
+
+                const fila = document.createElement("div");
+
+                let estadoClase;
+                let ipTexto;
+                let latenciaTexto;
+
+                if (salto.online) {
+
+                    estadoClase =
+                        "bg-emerald-50 border-emerald-200";
+
+                    ipTexto = escapeHtml(
+                        salto.ip || "Desconocido"
+                    );
+
+                    latenciaTexto =
+                        salto.latency !== null &&
+                        salto.latency !== undefined
+                            ? `${salto.latency} ms`
+                            : "-";
+
+                } else {
+
+                    estadoClase =
+                        "bg-red-50 border-red-200";
+
+                    ipTexto = "Sin respuesta";
+                    latenciaTexto = "-";
+                }
+
+                fila.className = `
+                    flex items-center gap-3
+                    border rounded-lg p-3
+                    ${estadoClase}
+                `;
+
+                fila.innerHTML = `
+
+                    <!-- Número de salto -->
+                    <div class="
+                        w-8 h-8
+                        rounded-full
+                        bg-white
+                        border
+                        flex items-center justify-center
+                        text-xs
+                        font-bold
+                        text-slate-600
+                        shrink-0
+                    ">
+                        ${salto.hop}
+                    </div>
+
+                    <!-- Información -->
+                    <div class="flex-1 min-w-0">
+
+                        <p class="
+                            font-mono
+                            text-sm
+                            font-semibold
+                            truncate
+                            ${salto.online
+                                ? "text-slate-700"
+                                : "text-red-700"}
+                        ">
+                            ${ipTexto}
+                        </p>
+
+                        <p class="text-xs text-slate-400">
+                            ${salto.online
+                                ? "Router / dispositivo"
+                                : "No respondió al traceroute"}
+                        </p>
+
+                    </div>
+
+                    <!-- Latencia -->
+                    <div class="
+                        text-xs
+                        font-mono
+                        font-semibold
+                        ${salto.online
+                            ? "text-emerald-600"
+                            : "text-red-500"}
+                    ">
+                        ${latenciaTexto}
+                    </div>
+                `;
+
+                container.appendChild(fila);
+            });
+        }
+
+        async function pingDispositivoModal() {
+
+            if (!modalDevice) return;
+
+            const btn = document.getElementById("btnModalPing");
+
+            const ip = modalDevice.ip;
+
+            btn.disabled = true;
+            btn.textContent = "Haciendo Ping...";
+
+            try {
+
+                const response = await fetch(
+                    `ping-individual/?ip=${encodeURIComponent(ip)}`
+                );
+
+                if (!response.ok) {
+                    throw new Error("Error haciendo ping");
+                }
+
+                const resultado = await response.json();
+
+                // Actualizar dispositivo
+                modalDevice.online = resultado.online;
+                modalDevice.latency = resultado.latency;
+                modalDevice.attempts = resultado.attempts;
+
+                actualizarModalPing(resultado);
+
+                // Actualizar también la tarjeta
+                actualizarEstado(resultado);
+
+            } catch (error) {
+
+                console.error(
+                    "Error haciendo ping individual:",
+                    error
+                );
+
+            } finally {
+
+                btn.disabled = false;
+                btn.textContent = "Hacer Ping";
+            }
+        }
+
+        function actualizarModalPing(resultado) {
+
+            const modalStatus =
+                document.getElementById("modalStatus");
+
+            const modalLatency =
+                document.getElementById("modalLatency");
+
+            if (resultado.online) {
+
+                modalStatus.textContent = "Online";
+
+                modalStatus.className =
+                    "mt-5 px-4 py-2 rounded-full bg-emerald-100 text-emerald-700 text-sm font-medium";
+
+                modalLatency.textContent =
+                    resultado.latency !== null &&
+                    resultado.latency !== undefined
+                        ? `Latencia: ${resultado.latency} ms`
+                        : "Latencia: -";
+
+            } else {
+
+                modalStatus.textContent = "Offline";
+
+                modalStatus.className =
+                    "mt-5 px-4 py-2 rounded-full bg-red-100 text-red-700 text-sm font-medium";
+
+                modalLatency.textContent =
+                    "Sin respuesta";
+            }
+        }
+
+
+        // ==================================================
+        // CERRAR MODAL
+        // ==================================================
+
+        function cerrarModal() {
+            const modal = document.getElementById("deviceModal");
+
+            modal.classList.add("hidden");
+            modal.classList.remove("flex");
+        }
+
+
+        // ==================================================
+        // CERRAR MODAL HACIENDO CLICK AFUERA
+        // ==================================================
+
+        document.getElementById("deviceModal").addEventListener("click", function (event) {
+            if (event.target === this) {
+                cerrarModal();
+            }
+        });
+
+
+        // ==================================================
+        // TOGGLE PING
+        // ==================================================
+
+        function togglePing() {
+            if (pingActivo) {
+                detenerPing();
+            } else {
+                iniciarPing();
+            }
+        }
+
+
+        // ==================================================
+        // INICIAR PING
+        // ==================================================
+
+        async function iniciarPing() {
+            if (pingActivo) return;
+
+            if (dispositivos.length === 0) {
+                alert("Primero debes cargar los dispositivos.");
+                return;
+            }
+
+            pingActivo = true;
+            cambiarBotonPing(true);
+
+            // Ejecutamos la primera ronda inmediatamente.
+            while (pingActivo) {
+                const inicio = Date.now();
+
+                await hacerPing();
+
+                const duracion = Date.now() - inicio;
+                const espera = Math.max(5000 - duracion, 0);
+
+                if (!pingActivo) break;
+
+                await esperar(espera);
+            }
+        }
+
+
+        // ==================================================
+        // DETENER PING
+        // ==================================================
+
+        function detenerPing() {
+            pingActivo = false;
+            cambiarBotonPing(false);
+        }
+
+
+        // ==================================================
+        // CAMBIAR BOTÓN PING
+        // ==================================================
+
+        function cambiarBotonPing(activo) {
+            const btnPing = document.getElementById("btnPing");
+            const pingText = document.getElementById("pingText");
+            const pingIcon = document.getElementById("pingIcon");
+
+            if (activo) {
+                btnPing.classList.remove("bg-emerald-600", "hover:bg-emerald-700");
+                btnPing.classList.add("bg-red-600", "hover:bg-red-700");
+
+                pingText.textContent = "Detener Ping";
+                pingIcon.textContent = "■";
+            } else {
+                btnPing.classList.remove("bg-red-600", "hover:bg-red-700");
+                btnPing.classList.add("bg-emerald-600", "hover:bg-emerald-700");
+
+                pingText.textContent = "Hacer Ping";
+                pingIcon.textContent = "●";
+            }
+        }
+
+
+        // ==================================================
+        // HACER PING
+        // ==================================================
+
+        async function hacerPing() {
+            if (dispositivos.length === 0) return;
+
+            const statusText = document.getElementById("statusText");
+            statusText.textContent = "Comprobando dispositivos...";
+
+            try {
+                /*
+                 * Un solo fetch.
+                 * Django se encarga de hacer todos los pings en paralelo.
+                 */
+                const response = await fetch("ping/");
+
+                if (!response.ok) {
+                    throw new Error("Error al ejecutar los pings");
+                }
+
+                const data = await response.json();
+
+                /*
+                 * Actualizamos nuestro array con los resultados.
+                 */
+                data.devices.forEach(resultado => {
+                    const dispositivo = dispositivos.find(d => d.ip === resultado.ip);
+
+                    if (!dispositivo) return;
+
+                    dispositivo.online = resultado.online;
+                    dispositivo.latency = resultado.latency;
+                    dispositivo.attempts = resultado.attempts;
+
+                    actualizarEstado(resultado);
+                });
+
+                statusText.textContent = `Última comprobación: ${new Date().toLocaleTimeString()}`;
+            } catch (error) {
+                console.error("Error haciendo ping:", error);
+                statusText.textContent = "Error al comprobar los dispositivos.";
+            }
+        }
+
+
+        // ==================================================
+        // ACTUALIZAR ESTADO VISUAL
+        // ==================================================
+
+        function actualizarEstado(resultado) {
+            const index = dispositivos.findIndex(
+                dispositivo => dispositivo.ip === resultado.ip
+            );
+
+            if (index === -1) return;
+
+            const statusElement = document.getElementById(`status-${index}`);
+            const latencyElement = document.getElementById(`latency-${index}`);
+
+            if (!statusElement) return;
+
+            if (resultado.online) {
+                statusElement.textContent = "Online";
+                statusElement.className = "px-3 py-1 rounded-full text-xs bg-emerald-100 text-emerald-700 font-medium";
+
+                latencyElement.textContent = resultado.latency !== null && resultado.latency !== undefined
+                    ? `Latencia: ${resultado.latency} ms`
+                    : "Latencia: -";
+            } else {
+                statusElement.textContent = "Offline";
+                statusElement.className = "px-3 py-1 rounded-full text-xs bg-red-100 text-red-700 font-medium";
+                latencyElement.textContent = "Sin respuesta";
+            }
+        }
+
+
+        // ==================================================
+        // ESPERAR
+        // ==================================================
+
+        function esperar(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+
+        // ==================================================
+        // ESCAPE HTML
+        // ==================================================
+
+        function escapeHtml(value) {
+            const div = document.createElement("div");
+
+            div.textContent = value;
+
+            return div.innerHTML;
+        }
+    </script>
+
+</body>
+</html>
