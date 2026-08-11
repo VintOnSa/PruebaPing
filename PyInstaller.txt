@@ -1,0 +1,1 @@
+ python -m PyInstaller --clean --noconsole --onefile --name "NetworkDashboard" --icon=icon.ico --add-data "index.html;." main.py
